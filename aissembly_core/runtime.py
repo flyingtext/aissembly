@@ -13,11 +13,21 @@ def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description="Run Aissembly program")
     parser.add_argument("program", help="Path to program file")
     parser.add_argument("--llm", dest="llm", help="Path to LLM definition JSON", default=None)
+    parser.add_argument(
+        "--reparse-iterations",
+        dest="reparse_iterations",
+        type=int,
+        default=1,
+        help="Number of line-by-line re-parsing iterations to run",
+    )
     args = parser.parse_args(argv)
 
     with open(args.program, "r", encoding="utf-8") as f:
         source = f.read()
-    prog = parse_program(source)
+
+    prog = None
+    for _ in range(max(args.reparse_iterations, 1)):
+        prog = parse_program(source)
 
     llm_defs: Dict[str, Dict] | None = None
     if args.llm:

@@ -3,8 +3,11 @@ import sys
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
+import json
+
 from aissembly_core.parser import parse_program
 from aissembly_core.executor import Executor
+from aissembly_core import runtime
 
 PROGRAM = """
 let x = 7 + 6
@@ -17,6 +20,18 @@ def test_execution():
     prog = parse_program(PROGRAM)
     exe = Executor()
     env = exe.run(prog)
+    assert env["x"] == 13
+    assert env["tag"] == "ok"
+    assert env["total"] == 6
+    assert env["steps"] == 3
+
+
+def test_execution_with_reparse_iterations(tmp_path, capsys):
+    prog_path = tmp_path / "prog.asl"
+    prog_path.write_text(PROGRAM)
+    runtime.main([str(prog_path), "--reparse-iterations", "2"])
+    captured = capsys.readouterr().out
+    env = json.loads(captured)
     assert env["x"] == 13
     assert env["tag"] == "ok"
     assert env["total"] == 6

@@ -6,10 +6,12 @@ Aissembly minimal language.
 ## Running Programs
 
 ```bash
-python -m aissembly_core.runtime path/to/program.asl --llm llm_functions.json
+python -m aissembly_core.runtime path/to/program.asl --llm llm_functions.json --reparse-iterations 2
 ```
 
-The optional `--llm` flag loads LLM function specifications in JSON format.
+The optional `--llm` flag loads LLM function specifications in JSON format.  The
+`--reparse-iterations` flag controls how many times the source is reparsed line
+by line before execution (default is `1`).
 
 ## Example
 
