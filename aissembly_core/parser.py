@@ -3,7 +3,7 @@ from __future__ import annotations
 """Parser for Aissembly minimal language."""
 
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import Any, Dict, List, Tuple, Union
 
 from lark import Lark, Transformer
 from lark.indenter import Indenter
@@ -42,11 +42,19 @@ class Var:
 
 @dataclass
 class Number:
-    value: int
+    value: Union[int, float]
 
 @dataclass
 class String:
     value: str
+
+@dataclass
+class ListLiteral:
+    elements: List[Any]
+
+@dataclass
+class DictLiteral:
+    items: List[Tuple[Any, Any]]
 
 @dataclass
 class NamedArg:
@@ -89,39 +97,86 @@ class TreeIndenter(Indenter):
     tab_len = 8
 
 
+
+
 GRAMMAR = r"""
 start: (statement _NEWLINE*)*
 
 statement: "let" NAME "=" expr        -> let_stmt
-         | expr                         -> expr_stmt
+         | expr                       -> expr_stmt
 
 ?expr: cond_block
      | cond_inline
      | for_loop
      | while_loop
-     | call
-     | STRING                        -> string
-     | SIGNED_NUMBER                 -> number
-     | NAME                          -> var
+     | or_expr
+
+?or_expr: or_expr "or" and_expr       -> or_op
+        | and_expr
+
+?and_expr: and_expr "and" not_expr    -> and_op
+         | not_expr
+
+?not_expr: "not" not_expr             -> not_op
+         | comparison
+
+?comparison: arith_expr (comp_op arith_expr)? -> comparison
+
+comp_op: "==" -> eq
+       | "!=" -> neq
+       | "<"  -> lt
+       | "<=" -> le
+       | ">"  -> gt
+       | ">=" -> ge
+
+?arith_expr: arith_expr "+" term      -> add
+           | arith_expr "-" term      -> sub
+           | term
+
+?term: term "*" factor                -> mul
+     | term "/" factor                -> div
+     | term "%" factor                -> mod
+     | factor
+
+?factor: "-" factor                   -> neg
+       | atom
+
+?atom: primary trailer*
+
+?primary: list_literal
+        | dict_literal
+        | call
+        | var
+        | STRING                      -> string
+        | SIGNED_NUMBER               -> number
+        | "(" expr ")"
+
+trailer: "[" expr "]"                 -> index
+       | "[" expr? ":" expr? "]"      -> slice
+
+call: dotted_name "(" [arguments] ")" -> call
+var: dotted_name                      -> var
+dotted_name: NAME ("." NAME)*
+
+arguments: argument ("," argument)*
+argument: NAME "=" expr               -> named_arg
+        | expr                        -> positional_arg
+
+list_literal: "[" [expr ("," expr)*] "]"      -> list_lit
+dict_literal: "{" [pair ("," pair)*] "}"      -> dict_lit
+pair: expr ":" expr
 
 for_loop: "for" "(" "range" "(" expr "," expr ("," expr)? ")" "," "init" "=" expr ")" block_or_inline -> for_loop
 
 while_loop: "while" "(" "test" "=" expr "," "init" "=" expr ")" block_or_inline -> while_loop
 
 block_or_inline: ":" _NEWLINE _INDENT "->" expr _DEDENT      -> block_body
-               | "->" expr                            -> inline_body
+               | "->" expr                                    -> inline_body
 
 cond_block: "cond" "(" "test" "=" expr ")" ":" _NEWLINE _INDENT "then" ":" _NEWLINE _INDENT "->" expr _NEWLINE _DEDENT "else" ":" _NEWLINE _INDENT "->" expr _NEWLINE _DEDENT _DEDENT -> cond_block
 
 cond_inline: "if" "(" expr ")" "?" expr ":" expr              -> inline_if
            | "cond" "(" "test" "=" expr ")" "->" expr "::else->" expr -> inline_cond
-
-call: NAME "(" [arguments] ")"                    -> call
-
-arguments: argument ("," argument)*
-
-argument: NAME "=" expr                             -> named_arg
-        | expr                                      -> positional_arg
 
 %import common.CNAME -> NAME
 %import common.SIGNED_NUMBER
@@ -132,6 +187,8 @@ _NEWLINE: /(\r?\n[ \t]*)+/
 %declare _INDENT _DEDENT
 %ignore WS_INLINE
 """
+
+
 
 
 class ASTBuilder(Transformer):
@@ -145,15 +202,30 @@ class ASTBuilder(Transformer):
     def expr_stmt(self, items):
         return items[0]
 
+    def dotted_name(self, items):
+        return ".".join(str(i) for i in items)
+
     def var(self, items):
-        return Var(str(items[0]))
+        return Var(items[0])
 
     def number(self, items):
-        return Number(int(items[0]))
+        s = str(items[0])
+        if any(ch in s for ch in ".eE"):
+            return Number(float(s))
+        return Number(int(s))
 
     def string(self, items):
         value = items[0][1:-1]
         return String(value)
+
+    def list_lit(self, items):
+        return ListLiteral(items)
+
+    def dict_lit(self, items):
+        return DictLiteral(items)
+
+    def pair(self, items):
+        return (items[0], items[1])
 
     def named_arg(self, items):
         return NamedArg(str(items[0]), items[1])
@@ -165,7 +237,7 @@ class ASTBuilder(Transformer):
         return items
 
     def call(self, items):
-        name = str(items[0])
+        name = items[0]
         args = []
         kwargs: Dict[str, Any] = {}
         if len(items) > 1:
@@ -175,6 +247,84 @@ class ASTBuilder(Transformer):
                 else:
                     args.append(arg)
         return Call(name, args, kwargs)
+
+    def atom(self, items):
+        node = items[0]
+        for tr in items[1:]:
+            if tr[0] == "index":
+                node = Call("op.get", [node, tr[1]], {})
+            else:
+                start, end = tr[1], tr[2]
+                node = Call("op.slice", [node, start, end], {})
+        return node
+
+    def index(self, items):
+        return ("index", items[0])
+
+    def slice(self, items):
+        start = items[0] if len(items) > 0 else None
+        end = items[1] if len(items) > 1 else None
+        return ("slice", start, end)
+
+    def add(self, items):
+        a, b = items
+        return Call("op.add", [a, b], {})
+
+    def sub(self, items):
+        a, b = items
+        return Call("op.sub", [a, b], {})
+
+    def mul(self, items):
+        a, b = items
+        return Call("op.mul", [a, b], {})
+
+    def div(self, items):
+        a, b = items
+        return Call("op.div", [a, b], {})
+
+    def mod(self, items):
+        a, b = items
+        return Call("op.mod", [a, b], {})
+
+    def neg(self, items):
+        val = items[0]
+        return Call("op.sub", [Number(0), val], {})
+
+    def comparison(self, items):
+        if len(items) == 1:
+            return items[0]
+        left, op, right = items
+        return Call(f"op.{op}", [left, right], {})
+
+    def eq(self, _):
+        return "eq"
+
+    def neq(self, _):
+        return "neq"
+
+    def lt(self, _):
+        return "lt"
+
+    def le(self, _):
+        return "le"
+
+    def gt(self, _):
+        return "gt"
+
+    def ge(self, _):
+        return "ge"
+
+    def and_op(self, items):
+        a, b = items
+        return Call("op.land", [a, b], {})
+
+    def or_op(self, items):
+        a, b = items
+        return Call("op.lor", [a, b], {})
+
+    def not_op(self, items):
+        a = items[0]
+        return Call("op.lnot", [a], {})
 
     def block_body(self, items):
         return items[0]

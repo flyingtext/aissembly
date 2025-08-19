@@ -1,7 +1,7 @@
 """Execution engine for Aissembly minimal language."""
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, List
 import json
 import importlib.util
 import urllib.request
@@ -12,6 +12,8 @@ from .parser import (
     Var,
     Number,
     String,
+    ListLiteral,
+    DictLiteral,
     Call,
     ForLoop,
     WhileLoop,
@@ -20,22 +22,40 @@ from .parser import (
 )
 
 
+def _set(obj, key, val):
+    obj[key] = val
+    return obj
+
+
+def _append(lst: List[Any], val: Any):
+    lst.append(val)
+    return lst
+
+
 # Built-in operations
 BUILTINS = {
-    "add": lambda a, b: a + b,
-    "sub": lambda a, b: a - b,
-    "mul": lambda a, b: a * b,
-    "div": lambda a, b: a / b,
-    "mod": lambda a, b: a % b,
-    "eq": lambda a, b: a == b,
-    "ne": lambda a, b: a != b,
-    "gt": lambda a, b: a > b,
-    "ge": lambda a, b: a >= b,
-    "lt": lambda a, b: a < b,
-    "le": lambda a, b: a <= b,
-    "land": lambda a, b: a and b,
-    "lor": lambda a, b: a or b,
-    "lnot": lambda a: not a,
+    "op.add": lambda a, b: a + b,
+    "op.sub": lambda a, b: a - b,
+    "op.mul": lambda a, b: a * b,
+    "op.div": lambda a, b: a / b,
+    "op.mod": lambda a, b: a % b,
+    "op.eq": lambda a, b: a == b,
+    "op.neq": lambda a, b: a != b,
+    "op.gt": lambda a, b: a > b,
+    "op.ge": lambda a, b: a >= b,
+    "op.lt": lambda a, b: a < b,
+    "op.le": lambda a, b: a <= b,
+    "op.land": lambda a, b: a and b,
+    "op.lor": lambda a, b: a or b,
+    "op.lnot": lambda a: not a,
+    "op.concat": lambda a, b: a + b,
+    "op.len": lambda x: len(x),
+    "op.substr": lambda s, start, end: s[start:end],
+    "op.get": lambda obj, key: obj[key],
+    "op.set": _set,
+    "op.append": _append,
+    "op.slice": lambda obj, start, end: obj[start:end],
+    "op.has": lambda d, key: key in d,
 }
 
 
@@ -57,6 +77,12 @@ class Executor:
             return node.value
         if isinstance(node, String):
             return node.value
+        if isinstance(node, ListLiteral):
+            return [self.eval_expr(e, env) for e in node.elements]
+        if isinstance(node, DictLiteral):
+            return {
+                self.eval_expr(k, env): self.eval_expr(v, env) for k, v in node.items
+            }
         if isinstance(node, Var):
             return env[node.name]
         if isinstance(node, Call):
