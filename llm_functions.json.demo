@@ -1,0 +1,20 @@
+[
+    {
+        "name": "summarization",
+        "model": "gpt-4o-mini",
+        "description": "Summarize the given text",
+        "adapter": {
+            "type": "http",
+            "url": "https://api.openai.com/v1/chat/completions",
+            "method": "POST"
+        },
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "description": "Input text"},
+                "summary_length": {"type": "integer", "default": 3, "description": "Summarization length"}
+            },
+            "required": ["text"]
+        }
+    }
+]
