@@ -29,6 +29,21 @@ Every construct is modularized so that individual natural-language functions can
 
 This repository currently contains documentation describing the vision for Aissembly. Implementation work will expand upon these files.
 
+## Prototype Parser
+
+An initial parser and execution engine for the minimal Aissembly language is
+available in the `aissembly_core` package. Parse and run programs with:
+
+```bash
+python -m aissembly_core.runtime path/to/program.asl --llm llm_functions.json
+```
+
+Unit tests demonstrate language features and can be executed via:
+
+```bash
+pytest
+```
+
 ## License
 
 This project is released under the terms of the MIT License. See [LICENSE](LICENSE) for details.
