@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Iterable
 import json
+import importlib.util
+import urllib.request
 
 from .parser import (
     Program,
@@ -102,13 +104,45 @@ class Executor:
 
     def call_llm(self, name: str, args: Iterable[Any], kwargs: Dict[str, Any]) -> Any:
         spec = self.llm_defs[name]
-        # Placeholder for actual LLM call
-        return {
-            "model": spec.get("model", "unknown"),
-            "name": name,
-            "args": args,
-            "kwargs": kwargs,
-        }
+        adapter = spec.get("adapter")
+        if adapter is None:
+            return {
+                "model": spec.get("model", "unknown"),
+                "name": name,
+                "args": args,
+                "kwargs": kwargs,
+            }
+
+        atype = adapter.get("type")
+        if atype == "python":
+            path = adapter.get("path")
+            func_name = adapter.get("function")
+            if not path or not func_name:
+                raise ValueError("Python adapter requires 'path' and 'function'")
+            spec_obj = importlib.util.spec_from_file_location("llm_adapter", path)
+            if spec_obj is None or spec_obj.loader is None:
+                raise ImportError(f"Cannot load adapter from {path}")
+            module = importlib.util.module_from_spec(spec_obj)
+            spec_obj.loader.exec_module(module)
+            func = getattr(module, func_name)
+            return func(*args, **kwargs)
+
+        if atype == "http":
+            url = adapter.get("url")
+            method = adapter.get("method", "POST").upper()
+            headers = {"Content-Type": "application/json"}
+            headers.update(adapter.get("headers", {}))
+            payload = adapter.get(
+                "payload",
+                {"model": spec.get("model"), "name": name, "args": args, "kwargs": kwargs},
+            )
+            data = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=data, headers=headers, method=method)
+            with urllib.request.urlopen(req) as resp:
+                body = resp.read().decode("utf-8")
+                return json.loads(body)
+
+        raise ValueError(f"Unsupported adapter type: {atype}")
 
 
 def load_llm_defs(path: str) -> Dict[str, Dict[str, Any]]:

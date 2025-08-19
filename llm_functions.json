@@ -3,6 +3,11 @@
         "name": "summarization",
         "model": "gpt-4o-mini",
         "description": "Summarize the given text",
+        "adapter": {
+            "type": "http",
+            "url": "https://api.openai.com/v1/chat/completions",
+            "method": "POST"
+        },
         "parameters": {
             "type": "object",
             "properties": {
