@@ -1,6 +1,6 @@
 # Aissembly
 
-Aissembly is an experimental compiler and IDE that treats natural-language descriptions as executable functions. Instead of writing traditional syntax, developers describe computations in plain language and let a language model produce the result. **Philosophy of Aiseembly is "Art of Aissembly is about making LLM and parser do all the craps."**
+Aissembly is an experimental compiler and IDE that treats natural-language descriptions as executable functions. Instead of writing traditional syntax, developers describe computations in plain language and let a language model produce the result. **Philosophy of Aissembly is "Art of Aissembly is about making LLM and parser do all the craps."**
 
 ## Core Concepts
 
