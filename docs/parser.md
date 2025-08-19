@@ -30,3 +30,40 @@ Executing this program produces the environment:
   "tag": "ok"
 }
 ```
+
+## Line-by-Line Re-parsing
+
+`parse_program` incrementally reparses each line of the source. This enables
+interactive sessions to handle single-line edits or streamed input.
+
+### Python API Example
+
+```python
+from aissembly_core.parser import parse_program
+
+SOURCE = """
+let x = add(7, 6)
+let tag = cond(test=ge(x, 10)):
+    then:
+        -> "ok"
+    else:
+        -> "ng"
+"""
+
+program = parse_program(SOURCE)
+```
+
+### Running the Example
+
+```bash
+python -m aissembly_core.runtime examples/cond_block.asl --llm llm_functions.json
+```
+
+The command prints:
+
+```
+{
+  "x": 13,
+  "tag": "ok"
+}
+```
