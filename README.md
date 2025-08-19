@@ -38,6 +38,9 @@ available in the `aissembly_core` package. Parse and run programs with:
 python -m aissembly_core.runtime path/to/program.asl --llm llm_functions.json
 ```
 
+LLM function specifications can define adapters for local scripts or HTTP APIs.
+See [docs/llm_adapters.md](docs/llm_adapters.md) for the configuration format.
+
 Unit tests demonstrate language features and can be executed via:
 
 ```bash
