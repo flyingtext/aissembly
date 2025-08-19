@@ -13,6 +13,24 @@ from lark.indenter import Indenter
 class Program:
     statements: List[Any]
 
+
+@dataclass
+class ParserOptions:
+    """Configuration for parser optimizations.
+
+    Each field represents how many times the corresponding optimization should
+    be attempted.  The optimizations themselves are placeholders and will be
+    handled by higher-level components (likely using an LLM) in future
+    iterations.
+    """
+
+    accuracy_opt_passes: int = 0
+    decomposition_opt_passes: int = 0
+    integration_opt_passes: int = 0
+    loop_to_operation_opt_passes: int = 0
+    operation_to_loop_opt_passes: int = 0
+    condition_to_operation_opt_passes: int = 0
+
 @dataclass
 class LetStmt:
     name: str
@@ -193,8 +211,56 @@ class ASTBuilder(Transformer):
         test, then, else_ = items
         return Cond(test, then, else_)
 
+def _identity(program: Program) -> Program:
+    """Placeholder optimization that returns the program unchanged."""
 
-def parse_program(source: str) -> Program:
+    return program
+
+
+def parse_program(source: str, options: ParserOptions | None = None) -> Program:
+    """Parse source code into a :class:`Program`.
+
+    The parser processes the program line by line so that each resulting line is
+    reparsed independently.  After parsing, a series of optimization hooks are
+    executed according to ``options``.  Each optimization currently performs no
+    transformation; they serve as placeholders for future LLM-based workflows.
+
+    Args:
+        source: Raw program text.
+        options: Optional :class:`ParserOptions` specifying how many times each
+            optimization should run.
+
+    Returns:
+        Parsed :class:`Program` instance.
+    """
+
     parser = Lark(GRAMMAR, parser="lalr", postlex=TreeIndenter(), start="start")
-    tree = parser.parse(source.strip())
-    return ASTBuilder().transform(tree)
+    builder = ASTBuilder()
+
+    statements: List[Any] = []
+    lines = [ln for ln in source.strip().splitlines() if ln.strip()]
+    for line in lines:
+        tree = parser.parse(line + "\n")
+        prog = builder.transform(tree)
+        if isinstance(prog, Program):
+            statements.extend(prog.statements)
+        else:
+            statements.append(prog)
+
+    program = Program(statements)
+    options = options or ParserOptions()
+
+    for _ in range(options.accuracy_opt_passes):
+        program = _identity(program)
+    for _ in range(options.decomposition_opt_passes):
+        program = _identity(program)
+    for _ in range(options.integration_opt_passes):
+        program = _identity(program)
+    for _ in range(options.loop_to_operation_opt_passes):
+        program = _identity(program)
+    for _ in range(options.operation_to_loop_opt_passes):
+        program = _identity(program)
+    for _ in range(options.condition_to_operation_opt_passes):
+        program = _identity(program)
+
+    return program
