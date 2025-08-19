@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any
 
 from lark import Lark, Transformer
+from lark.exceptions import UnexpectedEOF, UnexpectedInput
 from lark.indenter import Indenter
 
 
@@ -220,10 +221,13 @@ def _identity(program: Program) -> Program:
 def parse_program(source: str, options: ParserOptions | None = None) -> Program:
     """Parse source code into a :class:`Program`.
 
-    The parser processes the program line by line so that each resulting line is
-    reparsed independently.  After parsing, a series of optimization hooks are
-    executed according to ``options``.  Each optimization currently performs no
-    transformation; they serve as placeholders for future LLM-based workflows.
+    The parser incrementally consumes the source line by line.  Each line is
+    appended to a buffer and reparsed until a complete statement is produced.
+    This enables re-parsing of individual lines during interactive development
+    or when streaming program text from an LLM.  After parsing, a series of
+    optimization hooks are executed according to ``options``.  Each optimization
+    currently performs no transformation; they serve as placeholders for future
+    LLM-based workflows.
 
     Args:
         source: Raw program text.
@@ -239,8 +243,28 @@ def parse_program(source: str, options: ParserOptions | None = None) -> Program:
 
     statements: List[Any] = []
     lines = [ln for ln in source.strip().splitlines() if ln.strip()]
+    buffer = ""
     for line in lines:
-        tree = parser.parse(line + "\n")
+        buffer += line + "\n"
+        try:
+            tree = parser.parse(buffer)
+        except UnexpectedEOF:
+            continue
+        except UnexpectedInput as e:
+            token_type = getattr(getattr(e, "token", None), "type", "")
+            if token_type in ("$END", "_DEDENT"):
+                continue
+            raise
+        else:
+            prog = builder.transform(tree)
+            if isinstance(prog, Program):
+                statements.extend(prog.statements)
+            else:
+                statements.append(prog)
+            buffer = ""
+
+    if buffer.strip():
+        tree = parser.parse(buffer)
         prog = builder.transform(tree)
         if isinstance(prog, Program):
             statements.extend(prog.statements)

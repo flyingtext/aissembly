@@ -32,7 +32,9 @@ This repository currently contains documentation describing the vision for Aisse
 ## Prototype Parser
 
 An initial parser and execution engine for the minimal Aissembly language is
-available in the `aissembly_core` package. Parse and run programs with:
+available in the `aissembly_core` package.  The parser incrementally reparses
+source code line by line, making it suitable for interactive editing or LLM
+streaming. Parse and run programs with:
 
 ```bash
 python -m aissembly_core.runtime path/to/program.asl --llm llm_functions.json
