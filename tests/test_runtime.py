@@ -7,10 +7,10 @@ from aissembly_core.parser import parse_program
 from aissembly_core.executor import Executor
 
 PROGRAM = """
-let x = add(7, 6)
-let tag = cond(test=ge(x, 10)) -> "ok" ::else-> "ng"
-let total = for(range(1, 4), init=0) -> add(acc, i)
-let steps = while(test=lt(acc, 3), init=0) -> add(acc, 1)
+let x = 7 + 6
+let tag = cond(test=x >= 10) -> "ok" ::else-> "ng"
+let total = for(range(1, 4), init=0) -> acc + i
+let steps = while(test=acc < 3, init=0) -> acc + 1
 """
 
 def test_execution():
