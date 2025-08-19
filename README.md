@@ -27,7 +27,24 @@ Every construct is modularized so that individual natural-language functions can
 
 ## Project Structure
 
-This repository currently contains documentation describing the vision for Aissembly. Implementation work will expand upon these files.
+Top-level directories and key files:
+
+- `aissembly_core/` – prototype parser and runtime for the minimal Aissembly language.
+- `docs/` – design and reference material (see [Documentation](#documentation)).
+- `examples/` – sample Aissembly programs.
+- `tests/` – automated tests for the language and runtime.
+- `llm_functions.json` – example LLM function and adapter configuration.
+- `todo.md` – status of implemented vs pending language features.
+
+## Documentation
+
+The `docs/` directory contains design notes and reference material:
+
+- `PHILOSOPHY.md` – guiding principles behind Aissembly.
+- `architecture.md` – overview of the system architecture that turns natural language into executable behavior.
+- `language_spec.md` – working draft of the core language specification for implementers.
+- `llm_adapters.md` – describes how to configure adapters that route calls to local scripts or HTTP services.
+- `parser.md` – details the minimal parser and execution engine with examples.
 
 ## Prototype Parser
 
