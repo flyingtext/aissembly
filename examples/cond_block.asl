@@ -1,6 +1,8 @@
-let x = add(7, 6)
-let tag = cond(test=ge(x, 10)):
-    then:
-        -> "ok"
-    else:
-        -> "ng"
+let x = 7 + 6;
+let tag = null;
+
+if (x >= 10) {
+  tag = "ok";
+} else {
+  tag = "ng";
+}
