@@ -9,37 +9,12 @@ from lark import Lark, Transformer
 from lark.exceptions import UnexpectedEOF, UnexpectedInput
 from lark.indenter import Indenter
 
+from .optimizations.accuracy_opt_passes import accuracy_opt_passes_optimization
+
 
 @dataclass
 class Program:
     statements: List[Any]
-
-
-@dataclass
-class ParserOptions:
-    """Configuration for parser behaviour.
-
-    Attributes:
-        reparse_iterations: Number of times to parse the entire ``source``
-            before applying any optimisations.  Each iteration reparses the
-            original text, allowing higher level tooling to "reiterate" parsing
-            prior to execution.
-        accuracy_opt_passes: How many accuracy optimisation passes to run.
-        decomposition_opt_passes: Number of decomposition optimisation passes.
-        integration_opt_passes: Number of integration optimisation passes.
-        loop_to_operation_opt_passes: Passes converting loops into operations.
-        operation_to_loop_opt_passes: Passes converting operations into loops.
-        condition_to_operation_opt_passes: Passes converting conditions into
-            operations.
-    """
-
-    reparse_iterations: int = 1
-    accuracy_opt_passes: int = 0
-    decomposition_opt_passes: int = 0
-    integration_opt_passes: int = 0
-    loop_to_operation_opt_passes: int = 0
-    operation_to_loop_opt_passes: int = 0
-    condition_to_operation_opt_passes: int = 0
 
 @dataclass
 class LetStmt:
@@ -392,7 +367,7 @@ def _identity(program: Program) -> Program:
     return program
 
 
-def parse_program(source: str, options: ParserOptions | None = None) -> Program:
+def parse_program(source: str, options) -> Program:
     """Parse source code into a :class:`Program`.
 
     The parser incrementally consumes the source line by line.  Each line is
@@ -405,14 +380,11 @@ def parse_program(source: str, options: ParserOptions | None = None) -> Program:
 
     Args:
         source: Raw program text.
-        options: Optional :class:`ParserOptions` controlling iteration and
-            optimisation passes.
+        options: Options.
 
     Returns:
         Parsed :class:`Program` instance.
     """
-
-    options = options or ParserOptions()
 
     def _parse_once() -> Program:
         parser = Lark(GRAMMAR, parser="lalr", postlex=TreeIndenter(), start="start")
@@ -455,7 +427,7 @@ def parse_program(source: str, options: ParserOptions | None = None) -> Program:
         program = _parse_once()
 
     for _ in range(options.accuracy_opt_passes):
-        program = _identity(program)
+        program = accuracy_opt_passes_optimization(options, program)
     for _ in range(options.decomposition_opt_passes):
         program = _identity(program)
     for _ in range(options.integration_opt_passes):
