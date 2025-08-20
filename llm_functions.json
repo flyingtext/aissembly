@@ -1,11 +1,12 @@
 [
     {
         "name": "accuracy_opt_passes",
-        "model": "gemma3n:e4b",
+        "model": "gemma3:27b",
         "description": "Model for prompt accuracy optimization",
         "adapter": {
             "type": "http",
-            "url": "http://localhost:11434/api/generate",
+            "headers": {"Authorization": "03ead02d75bc47c9865cecaea6d4d7f2.2qeLx7rzNDq8KmUso1_yTPiX"},
+            "url": "http://localhost:21434/api/generate",
             "method": "POST"
         },
         "parameters": {
@@ -21,11 +22,12 @@
     },
     {
         "name": "decomposition_opt_passes",
-        "model": "gemma3n:e4b",
+        "model": "gemma3:27b",
         "description": "Model for prompt decomposition optimization",
         "adapter": {
             "type": "http",
-            "url": "http://localhost:11434/api/generate",
+            "headers": {"Authorization": "03ead02d75bc47c9865cecaea6d4d7f2.2qeLx7rzNDq8KmUso1_yTPiX"},
+            "url": "http://localhost:21434/api/generate",
             "method": "POST"
         },
         "parameters": {
@@ -59,11 +61,12 @@
     },
     {
         "name": "ollama_chat",
-        "model": "llama3.2:3b",
+        "model": "gpt-oss:20b",
         "description": "Send a prompt to a locally served Ollama model",
         "adapter": {
             "type": "http",
-            "url": "http://localhost:11434/api/generate",
+            "headers": {"Authorization": "03ead02d75bc47c9865cecaea6d4d7f2.2qeLx7rzNDq8KmUso1_yTPiX"},
+            "url": "https://ollama.com/api/generate",
             "method": "POST"
         },
         "parameters": {

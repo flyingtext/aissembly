@@ -17,12 +17,11 @@ from ..parser import (
     Boolean,
     LazyStr,
     lazy_to_str,
-    eval_node,
     parse_program,
 )
 
 def find_key_with_path(obj, target_key, path=(), _seen=None,
-                       _parent=None, _gparent=None, _ggparent=None):
+                       _parent=None, _gparent=None, _ggparent=None, _gggparent=None):
     """
     컨테이너(객체.__dict__, dict, list/tuple)를 재귀 탐색.
     target_key를 찾으면 (path_tuple, value_node,
@@ -38,12 +37,12 @@ def find_key_with_path(obj, target_key, path=(), _seen=None,
     # 1) dict: 키 직접 확인 + 값들 재귀
     if isinstance(obj, dict):
         if target_key in obj:
-            yield (path + (target_key,), obj[target_key], obj, _parent, _gparent)
+            yield (path + (target_key,), obj[target_key], obj, _parent, _gparent, _ggparent)
         for k, v in obj.items():
             # 조상 포인터 한 칸씩 밀어서 전달
             yield from find_key_with_path(
                 v, target_key, path + (str(k),), _seen,
-                _parent=obj, _gparent=_parent, _ggparent=_gparent
+                _parent=obj, _gparent=_parent, _ggparent=_gparent, _gggparent=_ggparent
             )
 
     # 2) list/tuple 등 시퀀스: 인덱스로 재귀
@@ -51,18 +50,18 @@ def find_key_with_path(obj, target_key, path=(), _seen=None,
         for i, v in enumerate(obj):
             yield from find_key_with_path(
                 v, target_key, path + (f'[{i}]',), _seen,
-                _parent=obj, _gparent=_parent, _ggparent=_gparent
+                _parent=obj, _gparent=_parent, _ggparent=_gparent, _gggparent=_ggparent
             )
 
     # 3) 일반 객체: __dict__로 재귀
     elif hasattr(obj, "__dict__"):
         d = obj.__dict__
         if target_key in d:
-            yield (path + (target_key,), d[target_key], obj, _parent, _gparent)
+            yield (path + (target_key,), d[target_key], obj, _parent, _gparent, _ggparent)
         for k, v in d.items():
             yield from find_key_with_path(
                 v, target_key, path + (k,), _seen,
-                _parent=obj, _gparent=_parent, _ggparent=_gparent
+                _parent=obj, _gparent=_parent, _ggparent=_gparent, _gggparent=_ggparent
             )
 
     # 리프면 종료
@@ -85,8 +84,10 @@ def decomposition_opt_passes_optimization(options, program) :
     executor = Executor(llm_defs=_defs)
     
     for line_count, line in enumerate(program.statements) :
-        for path, node, parent, pparent, ppparent in find_key_with_path(program.statements[line_count], 'prompt') :
+        for path, node, parent, pparent, ppparent, pppparent in find_key_with_path(program.statements[line_count], 'prompt') :
+            
             nodes = []
+            if isinstance(node, LazyStr) : continue
             original_query = node.value
             val = executor.call_llm(ind, args=[], kwargs={
                 'system': 'You are a professional prompt engineer. Only to make the prompt much more sophisticated.',
@@ -111,11 +112,11 @@ def decomposition_opt_passes_optimization(options, program) :
                     before_node = _node
                 else :
                     _kwargs = parent.copy()
-                    _kwargs['prompt'] = '[[[[Original Prompt]]]] ' + original_query + '\n\n[[[[Context]]]] ' + LazyStr(lambda: str(eval_node(before_node))) + '\n[[[[Prompt]]]] ' + p
+                    _kwargs['prompt'] = '[[[[Original Prompt]]]] ' + original_query + '\n\n[[[[Context]]]] ' + LazyStr(lambda: str(before_node)) + '\n[[[[Prompt]]]] ' + p
 
                     _node = Call(name = pparent.name, args=pparent.args, kwargs=_kwargs)
                     nodes.append(_node)
                     before_node = _node
-
-            ppparent = nodes
+            parent['prompt'] = before_node
+            print(program)
     return program

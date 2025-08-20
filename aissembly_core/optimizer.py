@@ -1,5 +1,8 @@
 from .optimizations.accuracy_opt_passes import accuracy_opt_passes_optimization
 from .optimizations.decomposition_opt_passes import decomposition_opt_passes_optimization
+from .optimizations.integration_opt_passes import integration_opt_passes_optimization
+from .unparser import program_to_source
+from .parser import parse_program
 
 def _identity(program):
     """Placeholder optimization that returns the program unchanged."""
@@ -11,9 +14,10 @@ def optimizer(program, options) :
     for _ in range(options.accuracy_opt_passes):
         program = accuracy_opt_passes_optimization(options, program)
     for _ in range(options.decomposition_opt_passes):
-        program = decomposition_opt_passes_optimization(options, program)
+        # program = decomposition_opt_passes_optimization(options, program)
+        pass
     for _ in range(options.integration_opt_passes):
-        program = _identity(program)
+        program = parse_program(integration_opt_passes_optimization(program_to_source(program)), options)
     for _ in range(options.loop_to_operation_opt_passes):
         program = _identity(program)
     for _ in range(options.operation_to_loop_opt_passes):
