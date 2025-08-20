@@ -10,7 +10,7 @@ Aissembly focuses on three high-level constructs:
 
    ```python
    def 함수(param1, param2):
-       return llm_query(f"{param1}을 가지고 {param2}를 통해 연산 결과값을 도출한다.")
+       return llm_query(prompt=f"{param1}을 가지고 {param2}를 통해 연산 결과값을 도출한다.")
    ```
 
 2. **반복문 함수 (Loop functions)** – Natural-language loops repeatedly invoke operation functions over collections.
