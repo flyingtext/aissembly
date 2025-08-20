@@ -5,7 +5,7 @@ import argparse
 import json
 from typing import Dict
 
-from .parser import parse_program
+from .parser import parse_program, ParserOptions
 from .executor import Executor, load_llm_defs
 
 
@@ -25,9 +25,8 @@ def main(argv: list[str] | None = None) -> None:
     with open(args.program, "r", encoding="utf-8") as f:
         source = f.read()
 
-    prog = None
-    for _ in range(max(args.reparse_iterations, 1)):
-        prog = parse_program(source)
+    options = ParserOptions(reparse_iterations=args.reparse_iterations)
+    prog = parse_program(source, options=options)
 
     llm_defs: Dict[str, Dict] | None = None
     if args.llm:

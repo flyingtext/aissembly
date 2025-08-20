@@ -17,14 +17,23 @@ class Program:
 
 @dataclass
 class ParserOptions:
-    """Configuration for parser optimizations.
+    """Configuration for parser behaviour.
 
-    Each field represents how many times the corresponding optimization should
-    be attempted.  The optimizations themselves are placeholders and will be
-    handled by higher-level components (likely using an LLM) in future
-    iterations.
+    Attributes:
+        reparse_iterations: Number of times to parse the entire ``source``
+            before applying any optimisations.  Each iteration reparses the
+            original text, allowing higher level tooling to "reiterate" parsing
+            prior to execution.
+        accuracy_opt_passes: How many accuracy optimisation passes to run.
+        decomposition_opt_passes: Number of decomposition optimisation passes.
+        integration_opt_passes: Number of integration optimisation passes.
+        loop_to_operation_opt_passes: Passes converting loops into operations.
+        operation_to_loop_opt_passes: Passes converting operations into loops.
+        condition_to_operation_opt_passes: Passes converting conditions into
+            operations.
     """
 
+    reparse_iterations: int = 1
     accuracy_opt_passes: int = 0
     decomposition_opt_passes: int = 0
     integration_opt_passes: int = 0
@@ -390,54 +399,60 @@ def parse_program(source: str, options: ParserOptions | None = None) -> Program:
     appended to a buffer and reparsed until a complete statement is produced.
     This enables re-parsing of individual lines during interactive development
     or when streaming program text from an LLM.  After parsing, a series of
-    optimization hooks are executed according to ``options``.  Each optimization
+    optimisation hooks are executed according to ``options``.  Each optimisation
     currently performs no transformation; they serve as placeholders for future
     LLM-based workflows.
 
     Args:
         source: Raw program text.
-        options: Optional :class:`ParserOptions` specifying how many times each
-            optimization should run.
+        options: Optional :class:`ParserOptions` controlling iteration and
+            optimisation passes.
 
     Returns:
         Parsed :class:`Program` instance.
     """
 
-    parser = Lark(GRAMMAR, parser="lalr", postlex=TreeIndenter(), start="start")
-    builder = ASTBuilder()
+    options = options or ParserOptions()
 
-    statements: List[Any] = []
-    lines = [ln for ln in source.strip().splitlines() if ln.strip()]
-    buffer = ""
-    for line in lines:
-        buffer += line + "\n"
-        try:
-            tree = parser.parse(buffer)
-        except UnexpectedEOF:
-            continue
-        except UnexpectedInput as e:
-            token_type = getattr(getattr(e, "token", None), "type", "")
-            if token_type in ("$END", "_DEDENT"):
+    def _parse_once() -> Program:
+        parser = Lark(GRAMMAR, parser="lalr", postlex=TreeIndenter(), start="start")
+        builder = ASTBuilder()
+
+        statements: List[Any] = []
+        lines = [ln for ln in source.strip().splitlines() if ln.strip()]
+        buffer = ""
+        for line in lines:
+            buffer += line + "\n"
+            try:
+                tree = parser.parse(buffer)
+            except UnexpectedEOF:
                 continue
-            raise
-        else:
+            except UnexpectedInput as e:
+                token_type = getattr(getattr(e, "token", None), "type", "")
+                if token_type in ("$END", "_DEDENT"):
+                    continue
+                raise
+            else:
+                prog = builder.transform(tree)
+                if isinstance(prog, Program):
+                    statements.extend(prog.statements)
+                else:
+                    statements.append(prog)
+                buffer = ""
+
+        if buffer.strip():
+            tree = parser.parse(buffer)
             prog = builder.transform(tree)
             if isinstance(prog, Program):
                 statements.extend(prog.statements)
             else:
                 statements.append(prog)
-            buffer = ""
 
-    if buffer.strip():
-        tree = parser.parse(buffer)
-        prog = builder.transform(tree)
-        if isinstance(prog, Program):
-            statements.extend(prog.statements)
-        else:
-            statements.append(prog)
+        return Program(statements)
 
-    program = Program(statements)
-    options = options or ParserOptions()
+    program = None
+    for _ in range(max(options.reparse_iterations, 1)):
+        program = _parse_once()
 
     for _ in range(options.accuracy_opt_passes):
         program = _identity(program)

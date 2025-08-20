@@ -9,9 +9,10 @@ Aissembly minimal language.
 python -m aissembly_core.runtime path/to/program.asl --llm llm_functions.json --reparse-iterations 2
 ```
 
-The optional `--llm` flag loads LLM function specifications in JSON format.  The
-`--reparse-iterations` flag controls how many times the source is reparsed line
-by line before execution (default is `1`).
+The optional `--llm` flag loads LLM function specifications in JSON format.
+`--reparse-iterations` forwards to ``ParserOptions.reparse_iterations`` and
+controls how many times the source is reparsed line by line before execution
+(default is `1`).
 
 ## Example
 
@@ -37,6 +38,22 @@ Executing this program produces the environment:
 
 `parse_program` incrementally reparses each line of the source. This enables
 interactive sessions to handle single-line edits or streamed input.
+
+## Parser Options
+
+The :class:`aissembly_core.parser.ParserOptions` dataclass configures parser
+behaviour:
+
+- ``reparse_iterations`` – how many times to parse the entire source before
+  optimisation.
+- ``accuracy_opt_passes`` – count of accuracy optimisation passes.
+- ``decomposition_opt_passes`` – number of decomposition optimisation passes.
+- ``integration_opt_passes`` – number of integration optimisation passes.
+- ``loop_to_operation_opt_passes`` – convert loops into operations.
+- ``operation_to_loop_opt_passes`` – convert operations into loops.
+- ``condition_to_operation_opt_passes`` – convert conditions into operations.
+
+These optimisation passes are placeholders for future LLM-driven transforms.
 
 ### Python API Example
 
