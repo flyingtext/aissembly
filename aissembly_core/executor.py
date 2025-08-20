@@ -127,7 +127,7 @@ class Executor:
 
     def run(self, program: Program, env: Dict[str, Any] | None = None) -> Dict[str, Any]:
         env = env or {}
-        for stmt in program.statements:
+        for stmt in program:
             if isinstance(stmt, LetStmt):
                 env[stmt.name] = self.eval_expr(stmt.expr, env)
             else:
