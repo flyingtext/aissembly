@@ -13,6 +13,7 @@
             "properties": {
                 "system": {"type": "string", "deescription": "System prompt"},
                 "prompt": {"type": "string", "description": "User prompt"},
+                "options": {"temperature": 0},
                 "stream": {"type": "boolean", "default": true}
             },
             "required": ["prompt"]
@@ -32,6 +33,7 @@
             "properties": {
                 "system": {"type": "string", "deescription": "System prompt"},
                 "prompt": {"type": "string", "description": "User prompt"},
+                "options": {"temperature": 0},
                 "stream": {"type": "boolean", "default": true}
             },
             "required": ["prompt"]

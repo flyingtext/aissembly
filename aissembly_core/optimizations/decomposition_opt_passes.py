@@ -83,14 +83,13 @@ def decomposition_opt_passes_optimization(options, program) :
             ind = n
 
     executor = Executor(llm_defs=_defs)
-    print(program)
-
+    
     for line_count, line in enumerate(program.statements) :
         for path, node, parent, pparent, ppparent in find_key_with_path(program.statements[line_count], 'prompt') :
             nodes = []
             val = executor.call_llm(ind, args=[], kwargs={
-                'system': 'You are a professional prompt engineer.',
-                'prompt': '''Split GIVEN PROMPT in several steps without losing the general questioning full-context. Each step must fulfill its own general context completely independently. Output of the engineered prompt only step by step in line by each one line. Output nothing more than the prompt only step by step in line by each one line. No step notation. No explaination. Only the prompts.
+                'system': 'You are a professional prompt engineer. Only to make the prompt much more sophisticated.',
+                'prompt': '''Split GIVEN PROMPT in several steps owning its answer from previous step. The prompts targets making answers better step-by-step. Output of the engineered prompt only step by step in line by each line. Output nothing more than the prompt only step by step in line by each line. No step notation. No explaination. Only the prompts to be placed each in line. Each prompts must not have to loose original attempt of GIVEN PROMPT.
                 GIVEN PROMPT: ''' + node.value
             })
             if '</think>' in val :
@@ -98,11 +97,10 @@ def decomposition_opt_passes_optimization(options, program) :
             
             prompts = val.strip().replace('\n\n', '\n').split('\n')
 
-            print(prompts)
-
             before_node = None
 
             for p in prompts :
+                if p == '' : continue
                 if before_node is None :
                     _kwargs = parent.copy()
                     _kwargs['prompt'] = p
@@ -112,7 +110,7 @@ def decomposition_opt_passes_optimization(options, program) :
                     before_node = _node
                 else :
                     _kwargs = parent.copy()
-                    _kwargs['prompt'] = 'Previous step response: ' + LazyStr(lambda: str(eval_node(before_node))) + '\n\nNext step prompt' + p
+                    _kwargs['prompt'] = '[[[[Context]]]] ' + LazyStr(lambda: str(eval_node(before_node))) + '\n[[[[Prompt]]]] ' + p
 
                     _node = Call(name = pparent.name, args=pparent.args, kwargs=_kwargs)
                     nodes.append(_node)
