@@ -243,7 +243,10 @@ class Executor:
                         if not line:
                             continue
                         chunk = json.loads(line.decode("utf-8"))
-                        text += chunk.get("response", "")
+                        response_text = chunk.get("response", "")
+                        text += response_text
+                        print(response_text, end="", flush=True)
+                    print()
                     return text
                 body = resp.read().decode("utf-8")
                 return json.loads(body)
