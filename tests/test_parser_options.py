@@ -14,6 +14,7 @@ let steps = while(test=lt(acc, 3), init=0) -> add(acc, 1)
 
 def test_parser_options_acceptance():
     opts = ParserOptions(
+        reparse_iterations=2,
         accuracy_opt_passes=1,
         decomposition_opt_passes=1,
         integration_opt_passes=1,
