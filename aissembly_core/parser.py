@@ -103,8 +103,8 @@ class TreeIndenter(Indenter):
 GRAMMAR = r"""
 start: (statement _NEWLINE*)*
 
-statement: "let" NAME "=" expr        -> let_stmt
-         | expr                       -> expr_stmt
+statement: "let" NAME "=" expr ";"?        -> let_stmt
+         | expr ";"?                       -> expr_stmt
 
 ?expr: cond_block
      | cond_inline
@@ -197,7 +197,8 @@ class ASTBuilder(Transformer):
         return Program(items)
 
     def let_stmt(self, items):
-        name, expr = items
+        name = items[0]
+        expr = items[1]
         return LetStmt(str(name), expr)
 
     def expr_stmt(self, items):
