@@ -5,6 +5,7 @@ from typing import Any, Dict, Iterable, List
 import json
 import importlib.util
 import urllib.request
+import math
 
 from .parser import (
     Program,
@@ -32,6 +33,43 @@ def _append(lst: List[Any], val: Any):
     return lst
 
 
+def _push(lst: List[Any], val: Any) -> int:
+    lst.append(val)
+    return len(lst)
+
+
+def _pop(lst: List[Any]):
+    return lst.pop()
+
+
+def _merge(a: Dict[Any, Any], b: Dict[Any, Any]) -> Dict[Any, Any]:
+    res = dict(a)
+    res.update(b)
+    return res
+
+
+def _split(s: str, sep: str) -> List[str]:
+    return s.split(sep)
+
+
+def _join(items: List[str], sep: str) -> str:
+    return sep.join(items)
+
+
+def _type(obj: Any) -> str:
+    return type(obj).__name__
+
+
+def _assert(cond: bool, msg: str = "Assertion failed") -> bool:
+    if not cond:
+        raise AssertionError(msg)
+    return True
+
+
+def _print(*args: Any) -> None:
+    print(*args)
+
+
 # Built-in operations
 BUILTINS = {
     "op.add": lambda a, b: a + b,
@@ -57,6 +95,29 @@ BUILTINS = {
     "op.slice": lambda obj, start, end: obj[start:end],
     "op.has": lambda d, key: key in d,
 }
+
+# Alias names used in examples
+BUILTINS.update(
+    {
+        "abs": abs,
+        "ceil": math.ceil,
+        "floor": math.floor,
+        "max": max,
+        "min": min,
+        "len": BUILTINS["op.len"],
+        "get": BUILTINS["op.get"],
+        "set": BUILTINS["op.set"],
+        "slice": BUILTINS["op.slice"],
+        "print": _print,
+        "pop": _pop,
+        "push": _push,
+        "split": _split,
+        "join": _join,
+        "merge": _merge,
+        "type": _type,
+        "assert": _assert,
+    }
+)
 
 
 class Executor:
