@@ -1,8 +1,7 @@
-let x = 7 + 6;
-let tag = null;
+let x = 7 + 6
+let tag = cond(test=x >= 10):
+    then:
+        -> "ok"
+    else:
+        -> "ng"
 
-if (x >= 10) {
-  tag = "ok";
-} else {
-  tag = "ng";
-}
