@@ -19,6 +19,7 @@ from .parser import (
     ForLoop,
     WhileLoop,
     Cond,
+    Boolean,
     parse_program,
 )
 
@@ -138,6 +139,8 @@ class Executor:
             return node.value
         if isinstance(node, String):
             return node.value
+        if isinstance(node, Boolean):
+            return node.value
         if isinstance(node, ListLiteral):
             return [self.eval_expr(e, env) for e in node.elements]
         if isinstance(node, DictLiteral):
@@ -214,21 +217,36 @@ class Executor:
             func = getattr(module, func_name)
             return func(*args, **kwargs)
 
+
         if atype == "http":
             url = adapter.get("url")
             method = adapter.get("method", "POST").upper()
             headers = {"Content-Type": "application/json"}
             headers.update(adapter.get("headers", {}))
-            payload = adapter.get(
-                "payload",
-                {"model": spec.get("model"), "name": name, "args": args, "kwargs": kwargs},
-            )
+            params_spec = spec.get("parameters", {}).get("properties", {})
+            param_names = list(params_spec.keys())
+            payload = {"model": spec.get("model")}
+            for name_arg, val in zip(param_names, args):
+                payload[name_arg] = val
+            for k, v in kwargs.items():
+                payload[k] = v
+            for k, prop in params_spec.items():
+                if k not in payload and "default" in prop:
+                    payload[k] = prop["default"]
             data = json.dumps(payload).encode("utf-8")
             req = urllib.request.Request(url, data=data, headers=headers, method=method)
             with urllib.request.urlopen(req) as resp:
+                if payload.get("stream"):
+                    text = ""
+                    for line in resp:
+                        line = line.strip()
+                        if not line:
+                            continue
+                        chunk = json.loads(line.decode("utf-8"))
+                        text += chunk.get("response", "")
+                    return text
                 body = resp.read().decode("utf-8")
                 return json.loads(body)
-
         raise ValueError(f"Unsupported adapter type: {atype}")
 
 

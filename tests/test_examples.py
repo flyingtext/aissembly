@@ -28,6 +28,9 @@ class DummyResp:
     def read(self):
         return self.body
 
+    def __iter__(self):
+        return iter(self.body.splitlines(True))
+
 
 @pytest.mark.parametrize("path", sorted(EXAMPLES_DIR.rglob("*.asl")))
 def test_example_runs(path, monkeypatch):
