@@ -111,7 +111,7 @@ def accuracy_opt_passes_optimization(program_source, options) :
         
         pos = None
         try :
-            pos = ret.find(full)
+            pos = ret.lfind(full)
         except :
             continue
 
