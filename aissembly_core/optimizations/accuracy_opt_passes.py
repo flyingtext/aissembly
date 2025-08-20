@@ -1,6 +1,9 @@
 import json
+import re
 from collections.abc import Sequence
+from .ebnf import aissembly_ebnf
 from ..executor import Executor
+from ..util.find_functions import find_function_blocks_excluding_strings
 
 from ..parser import (
     Program,
@@ -52,7 +55,7 @@ def find_key_with_path(obj, target_key, path=(), _seen=None):
     else:
         return
 
-def accuracy_opt_passes_optimization(options, program) :
+def accuracy_opt_passes_optimization(program_source, options) :
     f = open(options.llm, 'r', encoding='utf-8')
     llm_defs = f.read()
     f.close()
@@ -61,20 +64,73 @@ def accuracy_opt_passes_optimization(options, program) :
 
     ind = None
 
+    names = []
+
     for n, item in enumerate(_defs) :
+        names.append(item['name'])
         if item['name'] == 'accuracy_opt_passes' :
             ind = n
 
     executor = Executor(llm_defs=_defs)
 
-    for line_count, line in enumerate(program.statements) :
-        for path, node in find_key_with_path(program.statements[line_count], 'prompt') :
-            val = executor.call_llm(ind, args=[], kwargs={
-                'system': 'You are a professional prompt engineer. Only to make the prompt more sophisticated.',
-                'prompt': '''Sophistically engineer the GIVEN PROMPT without omitting the smallest details of given conditions. Output nothing more than the prompt only. No explaination. Mind that this is only a prompt engineering, not answering the prompt. Only make the GIVEN PROMPT more sophisticated without omitting the given conditions.
-                GIVEN PROMPT: ''' + node.value
-            })
-            if '</think>' in val :
-                val = val.split('</think>')[1].strip()
-            node.value = val
-    return program
+    ret = str(program_source)
+    
+    cnt = 0
+
+    for full, name, params, span in find_function_blocks_excluding_strings(program_source, names) :
+        # ollama_chat(prompt="What is an essence of Philosophy?") /  ollama_chat /  prompt="What is an essence of Philosophy?" / (6, 61)
+
+        try :
+            pattern = re.compile(r'prompt\s*=\s*(.*?)(?:,|$)')
+            prompt = pattern.search(params).group(1).strip()
+        except Exception as e :
+            print(e)
+            continue
+
+        if prompt.endswith(' ') or prompt.endswith(',') or prompt.endswith(')') :
+            prompt = prompt[:len(prompt) - 1]
+
+        prompt = prompt.strip()
+
+        sentence = executor.call_llm(ind, args=[], kwargs={
+            'system': 'You are a professional prompt engineer. Only to make the prompt more sophisticated. The GIVEN PROMPT is a part of Aissembly source code. Preserve the syntax of given text with following rule:' + aissembly_ebnf,
+            'prompt': '''Sophistically engineer the GIVEN PROMPT without omitting the smallest details of given conditions. Output nothing more than the prompt only. No explaination. Mind that this is only a prompt engineering, not answering the prompt. Only make the GIVEN PROMPT more sophisticated without omitting the given conditions. Output the string value in standard of Aissembly source code string syntax without using inline function.
+            GIVEN PROMPT: ''' + prompt
+        })
+
+        total = []
+
+        if sentence.strip() == '' : continue
+        
+        # sentence = sentence.replace('"', '\\"')
+
+        replaced = str(full)
+        replaced = 'let ACCURACY_OPT_' + str(cnt) + ' = ' + replaced.replace(prompt, '"Question : " + ' + sentence) +';'
+        total.append(replaced)
+        cnt = cnt + 1
+        
+        pos = None
+        try :
+            pos = ret.find(full)
+        except :
+            continue
+
+        enter_place = None
+        try :
+            enter_place = ret.lfind(';', pos)
+        except :
+            enter_place = 0
+
+        ret = ret.replace(full, 'ACCURACY_OPT_' + str(cnt - 1), 1)
+        ret = ret[:enter_place] + '\n' + '\n'.join(total) + '\n' + ret[enter_place:]
+
+    print(ret)
+    return ret
+
+
+
+'''
+'system': 'You are a professional prompt engineer. Only to make the prompt more sophisticated.',
+'prompt': 'Sophistically engineer the GIVEN PROMPT without omitting the smallest details of given conditions. Output nothing more than the prompt only. No explaination. Mind that this is only a prompt engineering, not answering the prompt. Only make the GIVEN PROMPT more sophisticated without omitting the given conditions.
+GIVEN PROMPT: ' + node.value
+'''

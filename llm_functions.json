@@ -1,12 +1,12 @@
 [
     {
         "name": "accuracy_opt_passes",
-        "model": "qwen3:1.7b",
+        "model": "gpt-oss:20b",
         "description": "Model for prompt accuracy optimization",
         "adapter": {
             "type": "http",
             "headers": {"Authorization": "03ead02d75bc47c9865cecaea6d4d7f2.2qeLx7rzNDq8KmUso1_yTPiX"},
-            "url": "http://localhost:11434/api/generate",
+            "url": "https://ollama.com/api/generate",
             "method": "POST"
         },
         "parameters": {
@@ -22,12 +22,12 @@
     },
     {
         "name": "decomposition_opt_passes",
-        "model": "llama3.2:3b",
+        "model": "gpt-oss:20b",
         "description": "Model for prompt decomposition optimization",
         "adapter": {
             "type": "http",
             "headers": {"Authorization": "03ead02d75bc47c9865cecaea6d4d7f2.2qeLx7rzNDq8KmUso1_yTPiX"},
-            "url": "http://localhost:11434/api/generate",
+            "url": "https://ollama.com/api/generate",
             "method": "POST"
         },
         "parameters": {

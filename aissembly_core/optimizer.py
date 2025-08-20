@@ -15,9 +15,11 @@ def optimizer(program, options) :
         ret = decomposition_opt_passes_optimization(program_to_source(program), options)
         program = parse_program(ret, options)
     for _ in range(options.accuracy_opt_passes):
-        program = accuracy_opt_passes_optimization(options, program)
+        ret = accuracy_opt_passes_optimization(program_to_source(program), options)
+        program = parse_program(ret, options)
     for _ in range(options.integration_opt_passes):
-        program = parse_program(integration_opt_passes_optimization(program_to_source(program), options), options)
+        # program = parse_program(integration_opt_passes_optimization(program_to_source(program), options), options)
+        pass
     for _ in range(options.loop_to_operation_opt_passes):
         program = _identity(program)
     for _ in range(options.operation_to_loop_opt_passes):

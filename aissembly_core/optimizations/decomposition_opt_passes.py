@@ -1,6 +1,7 @@
 import json
 import re
 from collections.abc import Sequence
+from .ebnf import aissembly_ebnf
 from ..executor import Executor
 from ..util.find_functions import find_function_blocks_excluding_strings
 
@@ -30,21 +31,18 @@ def decomposition_opt_passes_optimization(program_source, options) :
         # ollama_chat(prompt="What is an essence of Philosophy?") /  ollama_chat /  prompt="What is an essence of Philosophy?" / (6, 61)
 
         try :
-            prompt = re.findall(r'prompt*=*"(.*)"[, )]', params + ',')[0]
+            pattern = re.compile(r'prompt\s*=\s*(.*?)(?:,|$)')
+            prompt = pattern.search(params).group(1).strip()
         except Exception as e :
             print(e)
             continue
 
-        if prompt.endswith(' ') or prompt.endswith(',') or prompt.endswith(')') :
-            prompt = prompt[:len(prompt) - 1]
-
         prompt = prompt.strip()
-        only_text = prompt
 
         val = executor.call_llm(ind, args=[], kwargs={
-            'system': 'You are a professional prompt engineer and a programmer. Only to make the prompt much more sophisticated. You follow the strict rule that not making syntax error by make appropriate use of positions of the operaters in the string that matter with the source code.',
-            'prompt': '''Split GIVEN PROMPT in several steps owning its answer from previous step without omitting the smallest details of given conditions. The prompts targets making answers better step-by-step without omitting the given conditions. Output of the engineered prompt only step by step in line by each line without omitting the given conditions. Output nothing more than the prompt only step by step in line by each lin without omitting the given conditionse. No step notation. No explaination. Only the prompts to be placed each in line without omitting the given conditions. Each prompts must not have to loose original attempt of GIVEN PROMPT.
-            GIVEN PROMPT: ''' + only_text
+            'system': 'You are a professional prompt engineer and a programmer. Only to make the prompt much more sophisticated. You follow the strict rule that not making syntax error by make appropriate use of positions of the operaters in the string that matter with the source code. The GIVEN PROMPT is a part of Aissembly source code. Preserve the syntax of given text with following rule:' + aissembly_ebnf,
+            'prompt': '''Split GIVEN PROMPT in several steps owning its answer from previous step without omitting the smallest details of given conditions. The prompts targets making answers better step-by-step without omitting the given conditions. Output of the engineered prompt only step by step in line by each line without omitting the given conditions. Output nothing more than the prompt only step by step in line by each lin without omitting the given conditionse. No step notation. No explaination. Only the prompts to be placed each in line without omitting the given conditions. Each prompts must not have to loose original attempt of GIVEN PROMPT. Output the string value in standard of Aissembly source code string syntax without using inline function.
+            GIVEN PROMPT: ''' + prompt
         })
 
         val = val.replace('\n\n', '\n').split('\n')
@@ -57,16 +55,16 @@ def decomposition_opt_passes_optimization(program_source, options) :
 
         for n, sentence in enumerate(val) :
             if sentence.strip() == '' : continue
-            sentence = sentence.replace('"', '\\"')
+            # sentence = sentence.replace('"', '\\"')
             if before_sent is None :
                 replaced = str(full)
-                replaced = 'let DECOMPOSITION_OPT_' + str(cnt) + ' = ' + replaced.replace(only_text, sentence) +';'
+                replaced = 'let DECOMPOSITION_OPT_' + str(cnt) + ' = ' + replaced.replace(prompt, '"Question : " + ' + sentence) +';'
                 total.append(replaced)
                 cnt = cnt + 1
                 before_sent = sentence
             else :
                 replaced = str(full)
-                replaced = 'let DECOMPOSITION_OPT_' + str(cnt) + ' = ' + replaced.replace('"' + only_text + '"', 'DECOMPOSITION_OPT_' + str(cnt-1) + ' + " ' + sentence + '"') +';'
+                replaced = 'let DECOMPOSITION_OPT_' + str(cnt) + ' = ' + replaced.replace(prompt, 'DECOMPOSITION_OPT_' + str(cnt-1) + ' + " Question : " + ' + sentence) +';'
                 total.append(replaced)
                 cnt = cnt + 1
                 before_sent = sentence
