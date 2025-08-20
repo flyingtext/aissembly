@@ -50,6 +50,10 @@ class String:
     value: str
 
 @dataclass
+class Boolean:
+    value: bool
+
+@dataclass
 class ListLiteral:
     elements: List[Any]
 
@@ -149,6 +153,8 @@ comp_op: "==" -> eq
         | call
         | var
         | STRING                      -> string
+        | "true"                      -> true
+        | "false"                     -> false
         | SIGNED_NUMBER               -> number
         | "(" expr ")"
 
@@ -219,6 +225,12 @@ class ASTBuilder(Transformer):
     def string(self, items):
         value = items[0][1:-1]
         return String(value)
+
+    def true(self, items):
+        return Boolean(True)
+
+    def false(self, items):
+        return Boolean(False)
 
     def list_lit(self, items):
         return ListLiteral(items)
