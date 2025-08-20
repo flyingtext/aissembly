@@ -224,6 +224,8 @@ class ASTBuilder(Transformer):
         return ListLiteral(items)
 
     def dict_lit(self, items):
+        if items and items[0] is None:
+            items = []
         return DictLiteral(items)
 
     def pair(self, items):
