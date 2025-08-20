@@ -66,6 +66,11 @@ Unit tests demonstrate language features and can be executed via:
 pytest
 ```
 
+## Development Tools
+
+This project was developed using ChatGPT5, Codex, and Ollama Turbo from Ollama.
+These services proved extremely useful during development, though no sponsorship agreements are in place.
+
 ## License
 
 This project is released under the terms of the MIT License. See [LICENSE](LICENSE) for details.
