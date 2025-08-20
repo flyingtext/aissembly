@@ -9,9 +9,6 @@ from lark import Lark, Transformer
 from lark.exceptions import UnexpectedEOF, UnexpectedInput
 from lark.indenter import Indenter
 
-from .optimizations.accuracy_opt_passes import accuracy_opt_passes_optimization
-
-
 @dataclass
 class Program:
     statements: List[Any]
@@ -75,6 +72,52 @@ class Cond:
     test: Any
     then: Any
     else_: Any
+
+
+# ---- 간단한 evaluator (핵심: Call 처리) ----
+def eval_node(node):
+    if isinstance(node, String):
+        return node.value
+    if isinstance(node, Number):
+        return node.value
+    if isinstance(node, Call):
+        fn = ENV[node.name]
+        args = [eval_node(a) for a in node.args]
+        kwargs = {k: eval_node(v) for k, v in node.kwargs.items()}
+        return fn(*args, **kwargs)
+    # Dict/List/Cond 등은 필요에 맞게 추가
+    return node
+
+# ---- lazy-to-str 데코레이터 ----
+def lazy_to_str(func: Callable[..., str]) -> Callable[..., LazyStr]:
+    def _wrap(*a, **kw) -> LazyStr:
+        return LazyStr(lambda: func(*a, **kw))
+    return _wrap
+
+class LazyStr:
+    def __init__(self, thunk: Callable[[], str]):
+        self._thunk = thunk
+        self._value = None
+        self._done = False
+
+    def force(self) -> str:
+        if not self._done:
+            self._value = self._thunk()
+            self._done = True
+        return self._value
+
+    def __str__(self) -> str:
+        return self.force()
+
+    def __repr__(self) -> str:
+        return f"LazyStr({self._value!r})" if self._done else "LazyStr(<pending>)"
+
+    def __add__(self, other):
+        return LazyStr(lambda: str(self) + str(other))
+    def __radd__(self, other):
+        return LazyStr(lambda: str(other) + str(self))
+    def __format__(self, spec):
+        return format(self.force(), spec)
 
 
 class TreeIndenter(Indenter):
@@ -361,6 +404,7 @@ class ASTBuilder(Transformer):
         test, then, else_ = items
         return Cond(test, then, else_)
 
+
 def _identity(program: Program) -> Program:
     """Placeholder optimization that returns the program unchanged."""
 
@@ -425,18 +469,5 @@ def parse_program(source: str, options) -> Program:
     program = None
     for _ in range(max(options.reparse_iterations, 1)):
         program = _parse_once()
-
-    for _ in range(options.accuracy_opt_passes):
-        program = accuracy_opt_passes_optimization(options, program)
-    for _ in range(options.decomposition_opt_passes):
-        program = _identity(program)
-    for _ in range(options.integration_opt_passes):
-        program = _identity(program)
-    for _ in range(options.loop_to_operation_opt_passes):
-        program = _identity(program)
-    for _ in range(options.operation_to_loop_opt_passes):
-        program = _identity(program)
-    for _ in range(options.condition_to_operation_opt_passes):
-        program = _identity(program)
-
+    
     return program

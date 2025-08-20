@@ -6,6 +6,7 @@ import json
 from typing import Dict
 
 from .parser import parse_program
+from .optimizer import optimizer
 from .executor import Executor, load_llm_defs
 
 
@@ -62,6 +63,8 @@ def main(argv: list[str] | None = None) -> None:
         source = f.read()
 
     prog = parse_program(source, options=args)
+
+    prog = optimizer(prog, args)
 
     llm_defs: Dict[str, Dict] | None = None
     if args.llm:
