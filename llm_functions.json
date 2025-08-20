@@ -1,7 +1,7 @@
 [
     {
         "name": "accuracy_opt_passes",
-        "model": "llama3.2:3b",
+        "model": "qwen3:4b",
         "description": "Model for prompt accuracy optimization",
         "adapter": {
             "type": "http",
@@ -21,7 +21,7 @@
     },
     {
         "name": "decomposition_opt_passes",
-        "model": "llama3.2:3b",
+        "model": "qwen3:4b",
         "description": "Model for prompt decomposition optimization",
         "adapter": {
             "type": "http",

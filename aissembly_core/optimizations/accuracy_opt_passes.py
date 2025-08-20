@@ -70,8 +70,8 @@ def accuracy_opt_passes_optimization(options, program) :
     for line_count, line in enumerate(program.statements) :
         for path, node in find_key_with_path(program.statements[line_count], 'prompt') :
             val = executor.call_llm(ind, args=[], kwargs={
-                'system': 'You are a professional prompt engineer. Only to make the prompt much more sophisticated.',
-                'prompt': '''Sophistically engineer the GIVEN PROMPT step-by-step. Output of the engineered prompt only. Output nothing more than the prompt only. No explaination. Only the prompt must be the output. Mind that this is a prompt engineering.
+                'system': 'You are a professional prompt engineer. Only to make the prompt more sophisticated.',
+                'prompt': '''Sophistically engineer the GIVEN PROMPT. Output nothing more than the prompt only. No explaination. Mind that this is only a prompt engineering, not answering the prompt. Only make the GIVEN PROMPT more sophisticated.
                 GIVEN PROMPT: ''' + node.value
             })
             if '</think>' in val :
