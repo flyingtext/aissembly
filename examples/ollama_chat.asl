@@ -1,2 +1,2 @@
-let response = ollama_chat("Say hello from Ollama.");
+let response = ollama_chat(prompt="Say hello from Ollama.");
 print(response);
