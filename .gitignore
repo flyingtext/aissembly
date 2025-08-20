@@ -1,1 +1,3 @@
 llm_functions.json
+__pycache__
+*.pyc
