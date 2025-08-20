@@ -1,7 +1,7 @@
 [
     {
         "name": "accuracy_opt_passes",
-        "model": "qwen3:4b",
+        "model": "gemma3n:e4b",
         "description": "Model for prompt accuracy optimization",
         "adapter": {
             "type": "http",
@@ -13,7 +13,7 @@
             "properties": {
                 "system": {"type": "string", "deescription": "System prompt"},
                 "prompt": {"type": "string", "description": "User prompt"},
-                "options": {"temperature": 0},
+                "options": {"temperature": 0, "num_ctx": 4096},
                 "stream": {"type": "boolean", "default": true}
             },
             "required": ["prompt"]
@@ -21,7 +21,7 @@
     },
     {
         "name": "decomposition_opt_passes",
-        "model": "qwen3:4b",
+        "model": "gemma3n:e4b",
         "description": "Model for prompt decomposition optimization",
         "adapter": {
             "type": "http",
@@ -33,7 +33,7 @@
             "properties": {
                 "system": {"type": "string", "deescription": "System prompt"},
                 "prompt": {"type": "string", "description": "User prompt"},
-                "options": {"temperature": 0},
+                "options": {"temperature": 0, "num_ctx": 4096},
                 "stream": {"type": "boolean", "default": true}
             },
             "required": ["prompt"]

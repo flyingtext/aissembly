@@ -71,7 +71,7 @@ def accuracy_opt_passes_optimization(options, program) :
         for path, node in find_key_with_path(program.statements[line_count], 'prompt') :
             val = executor.call_llm(ind, args=[], kwargs={
                 'system': 'You are a professional prompt engineer. Only to make the prompt more sophisticated.',
-                'prompt': '''Sophistically engineer the GIVEN PROMPT. Output nothing more than the prompt only. No explaination. Mind that this is only a prompt engineering, not answering the prompt. Only make the GIVEN PROMPT more sophisticated.
+                'prompt': '''Sophistically engineer the GIVEN PROMPT without omitting the smallest details of given conditions. Output nothing more than the prompt only. No explaination. Mind that this is only a prompt engineering, not answering the prompt. Only make the GIVEN PROMPT more sophisticated without omitting the given conditions.
                 GIVEN PROMPT: ''' + node.value
             })
             if '</think>' in val :

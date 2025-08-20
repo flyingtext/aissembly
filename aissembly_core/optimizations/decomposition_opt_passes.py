@@ -87,9 +87,10 @@ def decomposition_opt_passes_optimization(options, program) :
     for line_count, line in enumerate(program.statements) :
         for path, node, parent, pparent, ppparent in find_key_with_path(program.statements[line_count], 'prompt') :
             nodes = []
+            original_query = node.value
             val = executor.call_llm(ind, args=[], kwargs={
                 'system': 'You are a professional prompt engineer. Only to make the prompt much more sophisticated.',
-                'prompt': '''Split GIVEN PROMPT in several steps owning its answer from previous step. The prompts targets making answers better step-by-step. Output of the engineered prompt only step by step in line by each line. Output nothing more than the prompt only step by step in line by each line. No step notation. No explaination. Only the prompts to be placed each in line. Each prompts must not have to loose original attempt of GIVEN PROMPT.
+                'prompt': '''Split GIVEN PROMPT in several steps owning its answer from previous step without omitting the smallest details of given conditions. The prompts targets making answers better step-by-step without omitting the given conditions. Output of the engineered prompt only step by step in line by each line without omitting the given conditions. Output nothing more than the prompt only step by step in line by each lin without omitting the given conditionse. No step notation. No explaination. Only the prompts to be placed each in line without omitting the given conditions. Each prompts must not have to loose original attempt of GIVEN PROMPT.
                 GIVEN PROMPT: ''' + node.value
             })
             if '</think>' in val :
@@ -110,7 +111,7 @@ def decomposition_opt_passes_optimization(options, program) :
                     before_node = _node
                 else :
                     _kwargs = parent.copy()
-                    _kwargs['prompt'] = '[[[[Context]]]] ' + LazyStr(lambda: str(eval_node(before_node))) + '\n[[[[Prompt]]]] ' + p
+                    _kwargs['prompt'] = '[[[[Original Prompt]]]] ' + original_query + '\n\n[[[[Context]]]] ' + LazyStr(lambda: str(eval_node(before_node))) + '\n[[[[Prompt]]]] ' + p
 
                     _node = Call(name = pparent.name, args=pparent.args, kwargs=_kwargs)
                     nodes.append(_node)
